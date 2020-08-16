@@ -1,0 +1,39 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  labels:
+    app: helm-carta-hubin
+  name: helm-carta-hubin
+spec:
+  concurrencyPolicy: Replace
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app: helm-carta-hubin
+        spec:
+          imagePullSecrets:
+            - name: quayauth           
+          containers:
+          - image: dguyhasnoname/helm-carta-hubin:0.1.0
+            imagePullPolicy: Always
+            name: carta-hubin        
+            ports:
+            - containerPort: 80    
+            resources:
+              limits:
+                cpu: 100m
+                memory: 500Mi
+              requests:
+                cpu: 100m
+                memory: 400Mi
+          restartPolicy: OnFailure
+  schedule: 0/15 * * * *
+  startingDeadlineSeconds: 43200
+  successfulJobsHistoryLimit: 3
+  suspend: false

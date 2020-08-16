@@ -15,11 +15,11 @@ class K8sSecrets:
     def get_secrets(ns):
         try:
             if ns != 'all':
-                #print ("\n[INFO] Fetching {} namespace configMaps data...".format(ns))
+                _logger.info("\"Fetching {} namespace configMaps data\"".format(ns))
                 namespace = ns
                 secrets = core.list_namespaced_config_map(namespace, timeout_seconds=10)
             else:
-                _logger.info("Fetching all namespace secrets data")
+                _logger.info("\"Fetching all namespace secrets data\"")
                 secrets = core.list_secret_for_all_namespaces(label_selector='owner=helm', timeout_seconds=10)
             return secrets
         except ApiException as e:

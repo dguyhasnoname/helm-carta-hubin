@@ -8,13 +8,30 @@ from modules import helpers as k8s
 from modules.get_secrets import K8sSecrets
 from modules import logging as logger
 
+global _logger, installed_charts
+_logger = logger.get_logger('Charts')
+
+class Cluster:
+    # fetching cluster name from modules/get_cm.py
+    def get_cluster_name():
+        from modules.get_cm import K8sConfigMap
+        cm = K8sConfigMap.get_cm('kube-system')
+        for item in cm.items:
+            if 'kubeadm-config' in item.metadata.name:
+                if 'clusterName' in item.data['ClusterConfiguration']:
+                    cluster_name = re.search(r"clusterName: ([\s\S]+)controlPlaneEndpoint", \
+                    item.data['ClusterConfiguration']).group(1)
+                    _logger.info("\"Cluster name:  {}\"".format(cluster_name.strip('\n')))
+                    return cluster_name.strip('\n')
+            else:
+                pass 
+
 class Charts:
-    global _logger, installed_charts
-    _logger = logger.get_logger('Charts')
+
     
     def get_installed_charts(namespace):
         data, temp_item = [], ''
-        _logger.info("checking helm charts")
+        _logger.info("\"checking helm charts\"")
         ns = 'all'
         secrets = K8sSecrets.get_secrets(ns)
         for item in secrets.items:
@@ -51,8 +68,9 @@ class Charts:
 
     def get_charts_list(namespace):
         temp_item = ''
+        cluster_name = Cluster.get_cluster_name()
         installed_charts = Charts.get_installed_charts(namespace)
-        _logger.info("adding all helm repos")
+        _logger.info("\"adding all helm repos\"")
         
         for item in installed_charts:
             item_chart_name = item[0][0]
@@ -61,7 +79,7 @@ class Charts:
 
             if not item[0][0] == temp_item:
                 item_chart_latest_version, chart_type = '', ''
-                _logger.info("checking {} helm chart for latest version"\
+                _logger.info("\"checking {} helm chart for latest version\""\
                 .format(item_chart_name))
                 latest_version_json = check_output("helm search repo {} \
                 -o json".format(item_chart_name), shell=True).decode('ascii')    
@@ -81,6 +99,7 @@ class Charts:
                     chart_version_status = 'latest'
 
                 _logger.info(json.dumps({
+                    "cluster": cluster_name,
                     "chart": item_chart_name,
                     "chart_type": chart_type,
                     "chart_installed_version": item_chart_version_installed,
